@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrightMind Erasmus Explorer</title>
+<style>
+:root{
+  --bg1:#07111f;
+  --bg2:#102d4a;
+  --card:rgba(255,255,255,.10);
+  --card2:rgba(255,255,255,.16);
+  --text:#f7fbff;
+  --muted:#b9c9d9;
+  --accent:#ffd166;
+  --green:#62d39b;
+  --red:#ff6b6b;
+  --blue:#62b6ff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+  color:var(--text); background:
+  radial-gradient(circle at 15% 15%,#1c5d87 0,transparent 28%),
+  radial-gradient(circle at 85% 80%,#244b6d 0,transparent 30%),
+  linear-gradient(135deg,var(--bg1),var(--bg2));
+}
+button{font:inherit}
+.app{min-height:100vh;display:flex;flex-direction:column}
+header{
+  height:76px; display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;border-bottom:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.18);backdrop-filter:blur(12px);position:sticky;top:0;z-index:5
+}
+.logo{font-weight:900;letter-spacing:.3px}.logo span{color:var(--accent)}
+.stats{display:flex;gap:10px;align-items:center}.pill{
+  padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.1);font-size:14px
+}
+main{width:min(1100px,94%);margin:0 auto;flex:1;padding:28px 0 50px}
+.progress-wrap{margin-bottom:18px}
+.progress-top{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-bottom:7px}
+.progress{height:9px;background:rgba(255,255,255,.12);border-radius:20px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#ff9f43);transition:.45s}
+.screen{display:none;animation:fade .35s ease}.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hero{
+  min-height:570px;display:flex;align-items:center;justify-content:center;text-align:center;
+  position:relative;overflow:hidden;border-radius:30px;
+  background:
+    linear-gradient(rgba(4,13,25,.42),rgba(4,13,25,.72)),
+    radial-gradient(circle at 50% 40%,rgba(98,182,255,.25),transparent 40%);
+  border:1px solid rgba(255,255,255,.13);padding:45px
+}
+.hero:before{content:"🌍";position:absolute;font-size:290px;opacity:.07;right:-35px;top:-55px}
+.hero:after{content:"✈️";position:absolute;font-size:100px;opacity:.13;left:4%;bottom:5%}
+.hero-content{max-width:760px;position:relative;z-index:1}
+.eyebrow{color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:2px;font-size:13px}
+h1{font-size:clamp(38px,7vw,72px);line-height:1.02;margin:15px 0}
+h2{font-size:clamp(28px,5vw,44px);margin:8px 0 12px}
+h3{font-size:22px;margin:0 0 10px}
+.lead{font-size:18px;line-height:1.65;color:var(--muted)}
+.tasks{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:25px 0}
+.task{padding:10px 14px;background:rgba(255,255,255,.09);border-radius:12px}
+.btn{
+  border:0;cursor:pointer;border-radius:15px;padding:15px 22px;font-weight:900;
+  transition:.2s;display:inline-flex;align-items:center;gap:8px
+}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.btn-primary{background:var(--accent);color:#1c2530;box-shadow:0 10px 25px rgba(255,209,102,.18)}
+.btn-secondary{background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.15)}
+.card{
+  background:var(--card);border:1px solid rgba(255,255,255,.13);border-radius:26px;
+  padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.18);backdrop-filter:blur(12px)
+}
+.country-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:24px}
+.country{font-size:16px;color:var(--accent);font-weight:900}.mission{color:var(--muted);line-height:1.55}
+.question{font-size:20px;font-weight:800;line-height:1.45;margin:22px 0}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.option{
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:white;
+  padding:17px;border-radius:15px;text-align:left;cursor:pointer;min-height:65px;
+  transition:.2s
+}
+.option:hover{background:rgba(255,255,255,.13);transform:translateY(-1px)}
+.option.correct{background:rgba(98,211,155,.22);border-color:var(--green)}
+.option.wrong{background:rgba(255,107,107,.20);border-color:var(--red)}
+.feedback{margin-top:20px;padding:20px;border-radius:17px;display:none;line-height:1.55}
+.feedback.show{display:block}.feedback.good{background:rgba(98,211,155,.14);border:1px solid rgba(98,211,155,.4)}
+.feedback.bad{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4)}
+.next-row{display:flex;justify-content:flex-end;margin-top:20px}
+.stamps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.stamp{width:45px;height:45px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.07);filter:grayscale(1);opacity:.35;border:1px dashed rgba(255,255,255,.2);font-size:21px}
+.stamp.earned{filter:none;opacity:1;background:rgba(255,209,102,.17);border:1px solid var(--accent);box-shadow:0 0 15px rgba(255,209,102,.15)}
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.culture{
+  padding:25px 15px;text-align:center;border-radius:18px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12);font-size:48px;cursor:pointer;transition:.2s
+}
+.culture:hover{transform:scale(1.03)}.culture small{display:block;font-size:14px;color:var(--muted);margin-top:8px}
+.route-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.route{
+  padding:20px;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)
+}
+.route b{font-size:20px}.route .time{font-size:28px;font-weight:900;margin:10px 0}.route p{color:var(--muted)}
+.match-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.match{
+  padding:16px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)
+}
+.match select{width:100%;margin-top:9px;background:#10263a;color:white;border:1px solid rgba(255,255,255,.18);padding:11px;border-radius:10px}
+.pattern{font-size:52px;letter-spacing:10px;text-align:center;margin:28px 0}
+.transport{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.transport button{text-align:center}
+.final{
+  text-align:center;padding:45px 25px;position:relative;overflow:hidden
+}
+.chest{font-size:110px;margin:10px}.keys{display:grid;grid-template-columns:repeat(2,1fr);gap:13px;max-width:650px;margin:25px auto}
+.key{padding:17px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);text-align:left}
+.key strong{display:block;margin-bottom:5px}.key span{color:var(--muted);font-size:14px}
+.footer-nav{display:flex;justify-content:space-between;margin-top:20px;gap:10px}
+.hidden{display:none!important}
+@media(max-width:700px){
+ header{padding:0 15px}.stats .pill:nth-child(2){display:none}
+ main{width:94%;padding-top:16px}.card{padding:21px}.hero{min-height:600px;padding:25px 18px}
+ .options,.cards4,.route-grid,.transport,.keys,.match-grid{grid-template-columns:1fr}
+ .country-head{flex-direction:column}.pattern{font-size:38px;letter-spacing:3px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">🌍 <span>BrightMind</span> Erasmus Explorer</div>
+  <div class="stats">
+    <div class="pill">⭐ <b id="stampCount">0</b>/7 Damga</div>
+    <div class="pill">🧩 Görev <b id="taskCount">0</b>/7</div>
+  </div>
+</header>
+
+<main>
+  <div class="progress-wrap">
+    <div class="progress-top"><span id="progressLabel">Avrupa macerası başlıyor!</span><span id="progressPercent">0%</span></div>
+    <div class="progress"><i id="progressBar"></i></div>
+  </div>
+
+  <!-- 1 -->
+  <section class="screen active" id="s1">
+    <div class="hero">
+      <div class="hero-content">
+        <div class="eyebrow">Erasmus+ • BrightMind Steps</div>
+        <h1>🌍 Avrupa Macerasına Hazır mısın?</h1>
+        <p class="lead">Bugün sıradan bir yolculuğa çıkmıyorsun. Farklı ülkeleri ve kültürleri keşfederken akıl yürütecek, problemler çözecek ve BrightMind Steps projesini tanıyacaksın.</p>
+        <div class="tasks">
+          <div class="task">🛂 Pasaportunu al</div><div class="task">🧩 Görevleri çöz</div>
+          <div class="task">🌍 Avrupa'yı keşfet</div><div class="task">⭐ 7 damga topla</div>
+        </div>
+        <button class="btn btn-primary" onclick="go(2)">PASAPORTUMU AL ✈️</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="screen" id="s2">
+    <div class="card">
+      <div class="country-head"><div><div class="country">🇹🇷 TÜRKİYE • GÖREV 1</div><h2>Projemizi Tanı</h2></div><div>🧠 Muhakeme & Analiz</div></div>
+      <p class="mission">BrightMind Steps: Reasoning & Expressing projemizin temel amacı nedir?</p>
+      <div class="question">BrightMind Steps projesinin temel amaçlarından biri aşağıdakilerden hangisidir?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,2)">A) Öğrencilerin daha fazla bilgiyi ezberlemesini sağlamak</button>
+        <button class="option" onclick="answer(this,true,2)">B) Öğrencilerin mantık-muhakeme ve problem çözme becerilerini geliştirmek</button>
+        <button class="option" onclick="answer(this,false,2)">C) Yalnızca yabancı dil öğretmek</button>
+        <button class="option" onclick="answer(this,false,2)">D) Öğrencilerin sınav sayısını artırmak</button>
+      </div>
+      <div class="feedback" id="f2"></div>
+      <div class="next-row"><button class="btn btn-primary hidden" id="n2" onclick="go(3)">İTALYA'YA UÇ ✈️</button></div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="screen" id="s3">
+    <div class="card">
+      <div class="country-head"><div><div class="country">🇮🇹 İTALYA • GÖREV 2</div><h2>Kültürel Şifre</h2></div><div>🧩 Sınıflandırma Mantığı</div></div>
+      <p class="mission">Pasaport kontrolünden geçebilmek için araya karışan yanlış kültür kartını bul!</p>
+      <div class="question">Bu dört sembolden hangisi İtalya ile ilişkili değildir?</div>
+      <div class="cards4">
+        <button class="culture" onclick="cultureAnswer(this,false)">🍕<small>Pizza</small></button>
+        <button class="culture" onclick="cultureAnswer(this,false)">🏛️<small>Kolezyum</small></button>
+        <button class="culture" onclick="cultureAnswer(this,true)">🗼<small>Eyfel Kulesi</small></button>
+        <button class="culture" onclick="cultureAnswer(this,false)">🍝<small>Makarna</small></button>
+      </div>
+      <div class="feedback" id="f3"></div>
+      <div class="next-row"><button class="btn btn-primary hidden" id="n3" onclick="go(4)">MADRID'E DEVAM ET 🇪🇸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="screen" id="s4">
+    <div class="card">
+      <div class="country-head"><div><div class="country">🇪🇸 İSPANYA • GÖREV 3</div><h2>Mantığını Kullan</h2></div><div>⏱️ Zaman Optimizasyonu</div></div>
+      <p class="mission">Erasmus ekibi Madrid'deki etkinliğe yetişmek zorunda. Toplam süreyi hesapla.</p>
+      <div class="route-grid">
+        <div class="route"><b>🔴 Kırmızı</b><div class="time">20 dk</div><p>20 dakika sürüyor.</p></div>
+        <div class="route"><b>🟢 Yeşil</b><div class="time">12 + 5 = 17</div><p>12 dk yol + 5 dk bekleme.</p></div>
+        <div class="route"><b>🔵 Mavi</b><div class="time">15 + 4 = 19</div><p>15 dk yol + 4 dk yürüme.</p></div>
+      </div>
+      <div class="question">En kısa sürede ulaştıracak rota hangisidir?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,4)">🔴 Kırmızı rota – 20 dakika</button>
+        <button class="option" onclick="answer(this,true,4)">🟢 Yeşil rota – 17 dakika</button>
+        <button class="option" onclick="answer(this,false,4)">🔵 Mavi rota – 19 dakika</button>
+        <button class="option" onclick="answer(this,false,4)">Üçü de aynı sürede</button>
+      </div>
+      <div class="feedback" id="f4"></div>
+      <div class="next-row"><button class="btn btn-primary hidden" id="n4" onclick="go(5)">PARİS'E GEÇ 🇫🇷</button></div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="screen" id="s5">
+    <div class="card">
+      <div class="country-head"><div><div class="country">🇫🇷 FRANSA • GÖREV 4</div><h2>İletişim Köprüsü</h2></div><div>💬 Eşleştirme & Bağlam</div></div>
+      <p class="mission">Fransızca ifadeleri Türkçe karşılıklarıyla eşleştir.</p>
+      <div class="match-grid">
+        <div class="match">Bonjour<select data-answer="Merhaba"><option value="">Seç...</option><option>Merhaba</option><option>Teşekkür ederim</option><option>Hoşça kal</option><option>Lütfen</option></select></div>
+        <div class="match">Merci<select data-answer="Teşekkür ederim"><option value="">Seç...</option><option>Merhaba</option><option>Teşekkür ederim</option><option>Hoşça kal</option><option>Lütfen</option></select></div>
+        <div class="match">Au revoir<select data-answer="Hoşça kal"><option value="">Seç...</option><option>Merhaba</option><option>Teşekkür ederim</option><option>Hoşça kal</option><option>Lütfen</option></select></div>
+        <div class="match">S'il vous plaît<select data-answer="Lütfen"><option value="">Seç...</option><option>Merhaba</option><option>Teşekkür ederim</option><option>Hoşça kal</option><option>Lütfen</option></select></div>
+      </div>
+      <div class="next-row" style="justify-content:space-between;align-items:center">
+        <div class="feedback" id="f5" style="margin:0;flex:1"></div>
+        <button class="btn btn-primary" id="check5" onclick="checkMatching()">EŞLEŞTİRMELERİ KONTROL ET</button>
+        <button class="btn btn-primary hidden" id="n5" onclick="go(6)">ALMANYA'YA GEÇ 🇩🇪</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="screen" id="s6">
+    <div class="card">
+      <div class="country-head"><div><div class="country">🇩🇪 ALMANYA • GÖREV 5</div><h2>Dijital Şifre</h2></div><div>🤖 Algoritmik Örüntü</div></div>
+      <p class="mission">Robotun Erasmus merkezine ulaşması gerekiyor.</p>
+      <div class="pattern">⬆️ ⬆️ ➡️ ➡️ ⬇️ ?</div>
+      <div class="question">Örüntü ikişerli adımlarla yön değiştirerek devam ettiğine göre sıradaki hareket hangisidir?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,6)">⬆️ Yukarı</button>
+        <button class="option" onclick="answer(this,false,6)">➡️ Sağa</button>
+        <button class="option" onclick="answer(this,true,6)">⬇️ Aşağı</button>
+        <button class="option" onclick="answer(this,false,6)">⬅️ Sola</button>
+      </div>
+      <div class="feedback" id="f6"></div>
+      <div class="next-row"><button class="btn btn-primary hidden" id="n6" onclick="go(7)">HOLLANDAYA PEDALLA 🚲</button></div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="screen" id="s7">
+    <div class="card">
+      <div class="country-head"><div><div class="country">🇳🇱 HOLLANDA • GÖREV 6</div><h2>Yeşil Erasmus</h2></div><div>🌱 Sürdürülebilirlik Kararı</div></div>
+      <p class="mission">Erasmus ekibinin yakın mesafedeki bir etkinliğe ulaşması gerekiyor. Çevresel etkiyi ve mesafeyi düşün.</p>
+      <div class="transport">
+        <button class="option" onclick="answer(this,false,7)">🚗<br>Özel otomobil</button>
+        <button class="option" onclick="answer(this,true,7)">🚲<br>Bisiklet</button>
+        <button class="option" onclick="answer(this,false,7)">🚆<br>Tren</button>
+        <button class="option" onclick="answer(this,false,7)">✈️<br>Uçak</button>
+      </div>
+      <div class="feedback" id="f7"></div>
+      <div class="next-row"><button class="btn btn-primary hidden" id="n7" onclick="go(8)">FİNLANDİYA'YA UÇ 🇫🇮</button></div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="screen" id="s8">
+    <div class="card">
+      <div class="country-head"><div><div class="country">🇫🇮 FİNLANDİYA • GÖREV 7</div><h2>Öğretmen Görevi</h2></div><div>🎓 Eğitimde Problem Çözme</div></div>
+      <p class="mission">Bir öğretmen öğrencilerine zor bir problem veriyor. Öğrenciler problemi çözemeyince öğretmen ne yapmalıdır?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,8)">A) Cevabı hemen söylemeli.</button>
+        <button class="option" onclick="answer(this,false,8)">B) Formülü tahtaya yazıp ezberletmeli.</button>
+        <button class="option" onclick="answer(this,true,8)">C) Öğrencilerin farklı çözüm yolları geliştirmelerini desteklemeli.</button>
+        <button class="option" onclick="answer(this,false,8)">D) Problemi tamamen kaldırmalı.</button>
+      </div>
+      <div class="feedback" id="f8"></div>
+      <div class="next-row"><button class="btn btn-primary hidden" id="n8" onclick="go(9)">BÜYÜK FİNALE GİT 🏆</button></div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="screen" id="s9">
+    <div class="card final">
+      <div class="country">🇪🇺 BÜYÜK FİNAL</div>
+      <h2>Erasmus Kasasını Aç</h2>
+      <p class="lead">7 görevi tamamladın. Şimdi topladığın 4 temel proje anahtarını yerleştir.</p>
+      <div class="chest" id="chest">🔒</div>
+      <div class="keys">
+        <div class="key">🌍 <strong>Dahil etme ve çeşitlilik</strong><span>Farklılıkları tanıma ve kapsayıcı yaklaşım.</span></div>
+        <div class="key">🌱 <strong>Çevresel sürdürülebilirlik</strong><span>Çevre dostu düşünme ve uygulama.</span></div>
+        <div class="key">💻 <strong>Dijital dönüşüm</strong><span>Dijital beceriler ve algoritmik düşünme.</span></div>
+        <div class="key">🤝 <strong>Erasmus+ ağına aktif katılım</strong><span>İş birliği, iletişim ve paylaşım.</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="openChest()">🔑 ANAHTARLARI YERLEŞTİR</button>
+      <div id="finalMessage" class="hidden" style="margin-top:25px">
+        <h2>🏆 TEBRİKLER! TÜM GÖREVLERİ TAMAMLADIN!</h2>
+        <p class="lead">Artık sen de bir <b>BrightMind Erasmus Explorer</b>'sın! 🎓✨</p>
+        <button class="btn btn-secondary" onclick="restart()">🔄 Yeniden Oyna</button>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<script>
+const total=7;
+let stamps=0, solved=new Set(), current=1;
+
+function updateUI(){
+  document.getElementById('stampCount').textContent=stamps;
+  document.getElementById('taskCount').textContent=solved.size;
+  const pct=Math.round((solved.size/total)*100);
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('progressPercent').textContent=pct+'%';
+  document.getElementById('progressLabel').textContent =
+    solved.size===7 ? 'Tüm görevler tamamlandı! 🏆' : 'Avrupa macerası devam ediyor...';
+}
+function go(n){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  current=n; window.scrollTo({top:0,behavior:'smooth'}); updateUI();
+}
+function markSolved(task){
+  if(!solved.has(task)){solved.add(task); stamps++; updateUI();}
+}
+function answer(btn, correct, task){
+  const screen=document.getElementById('s'+task);
+  screen.querySelectorAll('.option').forEach(b=>b.disabled=true);
+  btn.classList.add(correct?'correct':'wrong');
+  const f=document.getElementById('f'+task);
+  f.className='feedback show '+(correct?'good':'bad');
+  if(correct){
+    markSolved(task);
+    const texts={
+      2:'🎉 Harika! BrightMind Steps; düşünme, akıl yürütme, problem çözme ve öğrenilenleri farklı durumlarda kullanma becerilerini geliştirmeyi amaçlıyor. 🇹🇷 Türkiye damgasını kazandın!',
+      4:'🧠 İşte BrightMind düşüncesi! Bilgileri karşılaştırdın, seçenekleri değerlendirdin ve gerekçeli bir karar verdin. 🇪🇸 İspanya damgası kazanıldı!',
+      6:'💻 Dijital görev tamamlandı! Örüntüde iki yukarı, iki sağa ve iki aşağı kuralını fark ettin. 🇩🇪 Almanya damgası kazanıldı!',
+      7:'🌱 Yeşil Erasmus! Yakın mesafede bisiklet çevresel etkiyi azaltan bir ulaşım seçeneğidir. 🇳🇱 Hollanda damgası kazanıldı!',
+      8:'👏 BrightMind Öğretmeni! Öğrencilerin farklı çözüm yolları geliştirmelerini desteklemek, öğrenci merkezli problem çözmeyi güçlendirir. 🇫🇮 Finlandiya damgası kazanıldı!'
+    };
+    f.innerHTML=texts[task];
+    document.getElementById('n'+task).classList.remove('hidden');
+  }else{
+    f.innerHTML='🔎 Henüz değil. Seçenekleri ve verilen bilgileri tekrar düşün, sonra yeniden dene.';
+    screen.querySelectorAll('.option').forEach(b=>{b.disabled=false;b.classList.remove('wrong')});
+  }
+}
+function cultureAnswer(btn, correct){
+  document.querySelectorAll('#s3 .culture').forEach(b=>b.disabled=true);
+  btn.style.borderColor=correct?'var(--green)':'var(--red)';
+  const f=document.getElementById('f3');
+  f.className='feedback show '+(correct?'good':'bad');
+  if(correct){
+    markSolved(3);
+    f.innerHTML='🎉 <b>Benvenuto!</b> İtalya\'nın kültürel ipuçlarını başarıyla çözdün. Eyfel Kulesi Fransa\'ya aittir. Farklı kültürleri tanımak karşılıklı anlayışı geliştirir. 🇮🇹 İtalya damgası kazanıldı!';
+    document.getElementById('n3').classList.remove('hidden');
+  }else{
+    f.innerHTML='🔎 Bir kart diğerlerinden farklı. Fransa\'nın en bilinen simgesini düşün!';
+    document.querySelectorAll('#s3 .culture').forEach(b=>b.disabled=false);
+    btn.style.borderColor='';
+  }
+}
+function checkMatching(){
+  const sels=[...document.querySelectorAll('#s5 select')];
+  const ok=sels.every(s=>s.value===s.dataset.answer);
+  const f=document.getElementById('f5');
+  f.className='feedback show '+(ok?'good':'bad');
+  if(ok){
+    markSolved(5);
+    sels.forEach(s=>s.disabled=true);
+    f.innerHTML='🎉 <b>Très bien!</b> Farklı diller bizi ayırmak yerine birbirimizi tanımamız için yeni kapılar açabilir. 🇫🇷 Fransa damgası kazanıldı!';
+    document.getElementById('check5').classList.add('hidden');
+    document.getElementById('n5').classList.remove('hidden');
+  }else{
+    f.innerHTML='🔎 Bazı eşleştirmeler doğru değil. İfadelerin anlamlarını tekrar kontrol et.';
+  }
+}
+function openChest(){
+  if(solved.size<7){
+    alert('Önce 7 görevi de tamamlamalısın!');
+    return;
+  }
+  document.getElementById('chest').textContent='🎁';
+  document.getElementById('finalMessage').classList.remove('hidden');
+}
+function restart(){
+  location.reload();
+}
+updateUI();
+</script>
+</body>
+</html>
