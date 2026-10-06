@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Erasmus+ 3D Okul Keşfi</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #game-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Giriş / Ad-Soyad Modalı */
+    #start-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 15, 30, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-card {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid #334155;
+      color: #f8fafc;
+      text-align: center;
+    }
+    .modal-card h2 {
+      font-size: 24px;
+      margin-bottom: 12px;
+      color: #38bdf8;
+    }
+    .modal-card p {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .modal-card input {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+    }
+    .modal-card input:focus {
+      border-color: #38bdf8;
+    }
+    .modal-card button {
+      width: 100%;
+      padding: 14px;
+      background: #0284c7;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-card button:hover {
+      background: #0369a1;
+    }
+
+    /* Nişangah (Crosshair) */
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Bilgi ve İnceleme Paneli */
+    #interaction-prompt {
+      position: fixed;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      color: #38bdf8;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 15px;
+      border: 1px solid #38bdf8;
+      display: none;
+      z-index: 20;
+    }
+
+    #info-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .info-card {
+      background: #1e293b;
+      padding: 26px;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 500px;
+      border: 1px solid #38bdf8;
+      color: #f1f5f9;
+      position: relative;
+    }
+    .info-card h3 {
+      color: #38bdf8;
+      margin-bottom: 12px;
+      font-size: 20px;
+    }
+    .info-card p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 20px;
+    }
+    .info-card button {
+      background: #e11d48;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      float: right;
+    }
+
+    /* Sol Üst Bilgi Kartı */
+    #hud-info {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      background: rgba(15, 23, 42, 0.75);
+      color: #94a3b8;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 10;
+      pointer-events: none;
+      border: 1px solid #334155;
+    }
+
+    /* Mobil Kontroller */
+    #joystick-container {
+      position: fixed;
+      bottom: 25px;
+      left: 25px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      border-radius: 50%;
+      touch-action: none;
+      z-index: 30;
+      display: none;
+    }
+    #joystick-knob {
+      position: absolute;
+      top: 35px;
+      left: 35px;
+      width: 50px;
+      height: 50px;
+      background: rgba(56, 189, 248, 0.8);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    #mobile-action-btn {
+      position: fixed;
+      bottom: 35px;
+      right: 35px;
+      width: 75px;
+      height: 75px;
+      background: #0284c7;
+      color: white;
+      border: 2px solid #38bdf8;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: bold;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 30;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ad Soyad Modal -->
+  <div id="start-modal">
+    <div class="modal-card">
+      <h2>Erasmus+ Okul Sergisi</h2>
+      <p>3D Okul koridorlarında gezerek panolardan Erasmus+ programı hakkında bilgi edinin. Lütfen adınızı ve soyadınızı girin.</p>
+      <input type="text" id="player-name" placeholder="Adınız ve Soyadınız" autocomplete="off" required>
+      <button id="start-btn">Keşfe Başla</button>
+    </div>
+  </div>
+
+  <!-- Arayüz Elemanları -->
+  <div id="crosshair"></div>
+  <div id="hud-info">
+    <div><strong>Kontroller:</strong></div>
+    <div>PC: WASD ile yürü, Fare ile bak, [E] İncele</div>
+    <div>Mobil: Sol Joystick yürü, Sağ alan bak, [İncele] butonu</div>
+  </div>
+
+  <div id="interaction-prompt">İncelemek için [E] tuşuna veya butona bas</div>
+
+  <!-- Bilgi Panosu Kartı -->
+  <div id="info-modal">
+    <div class="info-card">
+      <h3 id="modal-title">Pano Başlığı</h3>
+      <p id="modal-desc">Pano içeriği buraya gelecek...</p>
+      <button id="close-info-btn">Kapat</button>
+    </div>
+  </div>
+
+  <!-- Mobil Arayüz Butonları -->
+  <div id="joystick-container">
+    <div id="joystick-knob"></div>
+  </div>
+  <div id="mobile-action-btn">İncele</div>
+
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Three.js Kütüphanesi -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    const FORMSPREE_ENDPOINT = "https://formspree.io/f/mbgdrqae";
+
+    // 8 Adet Zengin Erasmus Panosu İçeriği
+    const boardData = [
+      {
+        title: "1. Erasmus+ Nedir?",
+        desc: "Erasmus+, Avrupa Birliği'nin eğitim, gençlik ve spor alanlarındaki hibe programıdır. Kişilere yurt dışında eğitim alma, staj yapma ve gönüllü projelere katılma imkanı sunar.",
+        pos: { x: -3.8, y: 1.8, z: -10 },
+        rotY: Math.PI / 2
+      },
+      {
+        title: "2. Öğrenim Hareketliliği",
+        desc: "Ön lisans, lisans, yüksek lisans ve doktora öğrencileri, eğitimlerinin bir dönemini veya tamamını anlaşmalı bir Avrupa üniversitesinde tamamlayabilir.",
+        pos: { x: 3.8, y: 1.8, z: -10 },
+        rotY: -Math.PI / 2
+      },
+      {
+        title: "3. Staj Hareketliliği",
+        desc: "Öğrencilerin ve yeni mezunların Avrupa'daki işletmelerde, araştırma merkezlerinde mesleki staj yapmasını sağlar. Mezuniyet sonrası 12 ay içinde de yapılabilir.",
+        pos: { x: -3.8, y: 1.8, z: -25 },
+        rotY: Math.PI / 2
+      },
+      {
+        title: "4. Hibe Desteği & Ülke Grupları",
+        desc: "Katılımcılara yaşam masraflarını karşılamak üzere hibe verilir. Ülkelerin yaşam maliyetlerine göre aylık 450€ - 750€ arasında değişen geri ödemesiz destek sağlanır.",
+        pos: { x: 3.8, y: 1.8, z: -25 },
+        rotY: -Math.PI / 2
+      },
+      {
+        title: "5. Dil Sınavı & OLS Desteği",
+        desc: "Başvuruda yabancı dil yeterliliği aranır. Hak kazanan öğrenciler, 'Online Language Support' (OLS) platformu üzerinden ücretsiz dil eğitim kurslarına erişebilir.",
+        pos: { x: -3.8, y: 1.8, z: -40 },
+        rotY: Math.PI / 2
+      },
+      {
+        title: "6. Yeşil Seyahat (Green Travel)",
+        desc: "Uçak yerine tren, otobüs veya paylaşımlı araç gibi çevre dostu ulaşım araçlarını tercih eden katılımcılara tek seferlik ek seyahat hibesi tanımlanır.",
+        pos: { x: 3.8, y: 1.8, z: -40 },
+        rotY: -Math.PI / 2
+      },
+      {
+        title: "7. ESN (Erasmus Student Network)",
+        desc: "Gittiğiniz ülkede yalnız değilsiniz! ESN gönüllüleri, barınma, oryantasyon, şehir turları ve sosyal etkinliklerle değişim öğrencilerine rehberlik eder.",
+        pos: { x: -3.8, y: 1.8, z: -55 },
+        rotY: Math.PI / 2
+      },
+      {
+        title: "8. Kişisel ve Kariyer Kazanımları",
+        desc: "Farklı kültürleri tanıma, özgüven kazanma, bağımsız yaşama becerisi ve küresel bir arkadaş ağı edinerek CV'nizi uluslararası düzeyde güçlendirir.",
+        pos: { x: 3.8, y: 1.8, z: -55 },
+        rotY: -Math.PI / 2
+      }
+    ];
+
+    // Formspree ve Başlatma Mantığı
+    const startModal = document.getElementById('start-modal');
+    const nameInput = document.getElementById('player-name');
+    const startBtn = document.getElementById('start-btn');
+    let isGameActive = false;
+
+    startBtn.addEventListener('click', async () => {
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert("Lütfen adınızı ve soyadınızı yazın!");
+        return;
+      }
+
+      startBtn.textContent = "Kaydediliyor...";
+      startBtn.disabled = true;
+
+      try {
+        await fetch(FORMSPREE_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            Katilimci: name,
+            GirisZamani: new Date().toLocaleString('tr-TR')
+          })
+        });
+      } catch (e) {
+        console.warn("Form gönderim hatası, oyuna devam ediliyor:", e);
+      } finally {
+        startModal.style.display = 'none';
+        isGameActive = true;
+        initTouchIfMobile();
+      }
+    });
+
+    // Three.js Kurulumu
+    const canvas = document.getElementById('game-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0f1d);
+
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.6, 2); // İnsan göz hizası 1.6m
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Aydınlatma
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    // Koridor Boyunca Tavan Lambaları
+    for (let z = 0; z >= -65; z -= 12) {
+      const pointLight = new THREE.PointLight(0xfff7ed, 0.8, 14);
+      pointLight.position.set(0, 3.8, z);
+      scene.add(pointLight);
+
+      // Lamba Armatürü
+      const lampGeo = new THREE.BoxGeometry(1.6, 0.1, 0.6);
+      const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const lamp = new THREE.Mesh(lampGeo, lampMat);
+      lamp.position.set(0, 3.95, z);
+      scene.add(lamp);
+    }
+
+    // Kapalı Koridor Mimarisi (Genişlik: 8m, Yükseklik: 4m, Derinlik: 70m)
+    const corridorLength = 70;
+    const corridorWidth = 8;
+    const corridorHeight = 4;
+    const corridorCenterZ = -32.5;
+
+    // Zemin
+    const floorGeo = new THREE.PlaneGeometry(corridorWidth, corridorLength);
+    const floorMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, 0, corridorCenterZ);
+    scene.add(floor);
+
+    // Tavan (Kapalı, Siyah boşluk engellendi)
+    const ceilingGeo = new THREE.PlaneGeometry(corridorWidth, corridorLength);
+    const ceilingMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.set(0, corridorHeight, corridorCenterZ);
+    scene.add(ceiling);
+
+    // Sol Duvar
+    const leftWallGeo = new THREE.PlaneGeometry(corridorLength, corridorHeight);
+    const wallMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+    const leftWall = new THREE.Mesh(leftWallGeo, wallMat);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.position.set(-corridorWidth / 2, corridorHeight / 2, corridorCenterZ);
+    scene.add(leftWall);
+
+    // Sağ Duvar
+    const rightWall = new THREE.Mesh(leftWallGeo, wallMat);
+    rightWall.rotation.y = -Math.PI / 2;
+    rightWall.position.set(corridorWidth / 2, corridorHeight / 2, corridorCenterZ);
+    scene.add(rightWall);
+
+    // Arka Duvar (Başlangıç Arkası)
+    const endWallGeo = new THREE.PlaneGeometry(corridorWidth, corridorHeight);
+    const backWall = new THREE.Mesh(endWallGeo, wallMat);
+    backWall.position.set(0, corridorHeight / 2, 2.5);
+    scene.add(backWall);
+
+    // Ön Duvar (Koridor Sonu)
+    const frontWall = new THREE.Mesh(endWallGeo, wallMat);
+    frontWall.rotation.y = Math.PI;
+    frontWall.position.set(0, corridorHeight / 2, corridorCenterZ - (corridorLength / 2));
+    scene.add(frontWall);
+
+    // Panoların Oluşturulması
+    const interactiveBoards = [];
+
+    function createBoard(data) {
+      const group = new THREE.Group();
+
+      // Ahşap Çerçeve
+      const frameGeo = new THREE.BoxGeometry(2.3, 1.5, 0.08);
+      const frameMat = new THREE.MeshLambertMaterial({ color: 0xb45309 });
+      const frame = new THREE.Mesh(frameGeo, frameMat);
+
+      // Yazı / Pano Yüzeyi
+      const boardGeo = new THREE.BoxGeometry(2.1, 1.3, 0.09);
+      const boardMat = new THREE.MeshLambertMaterial({ color: 0x064e3b });
+      const board = new THREE.Mesh(boardGeo, boardMat);
+
+      group.add(frame);
+      group.add(board);
+      group.position.set(data.pos.x, data.pos.y, data.pos.z);
+      group.rotation.y = data.rotY;
+
+      group.userData = data;
+      scene.add(group);
+      interactiveBoards.push(group);
+    }
+
+    boardData.forEach(data => createBoard(data));
+
+    // Kontroller & Etkileşim Durumları
+    const keys = { w: false, a: false, s: false, d: false };
+    let cameraYaw = 0;
+    let cameraPitch = 0;
+    let currentNearBoard = null;
+
+    // PC Klavye Dinleyicileri
+    window.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      if (keys.hasOwnProperty(key)) keys[key] = true;
+      if (key === 'arrowup') keys.w = true;
+      if (key === 'arrowdown') keys.s = true;
+      if (key === 'arrowleft') keys.a = true;
+      if (key === 'arrowright') keys.d = true;
+
+      if (key === 'e') triggerInteraction();
+      if (key === 'escape') closeInfoModal();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const key = e.key.toLowerCase();
+      if (keys.hasOwnProperty(key)) keys[key] = false;
+      if (key === 'arrowup') keys.w = false;
+      if (key === 'arrowdown') keys.s = false;
+      if (key === 'arrowleft') keys.a = false;
+      if (key === 'arrowright') keys.d = false;
+    });
+
+    // PC Fare Bakışı (PointerLock)
+    canvas.addEventListener('click', () => {
+      if (isGameActive && !isTouchDevice()) {
+        canvas.requestPointerLock();
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (document.pointerLockElement === canvas) {
+        cameraYaw -= e.movementX * 0.0022;
+        cameraPitch -= e.movementY * 0.0022;
+        cameraPitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, cameraPitch));
+      }
+    });
+
+    // Mobil Algılama ve Dokunmatik Kontroller
+    function isTouchDevice() {
+      return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    }
+
+    const joystickContainer = document.getElementById('joystick-container');
+    const joystickKnob = document.getElementById('joystick-knob');
+    const mobileActionBtn = document.getElementById('mobile-action-btn');
+
+    let touchMoveVector = { x: 0, y: 0 };
+    let moveTouchId = null;
+    let lookTouchId = null;
+    let lookLastPos = { x: 0, y: 0 };
+
+    function initTouchIfMobile() {
+      if (isTouchDevice()) {
+        joystickContainer.style.display = 'block';
+        mobileActionBtn.style.display = 'flex';
+      }
+    }
+
+    // Joystick Dokunmatik Mantığı
+    joystickContainer.addEventListener('touchstart', (e) => {
+      for (let t of e.changedTouches) {
+        if (moveTouchId === null) {
+          moveTouchId = t.identifier;
+          handleJoystickMove(t);
+        }
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      for (let t of e.changedTouches) {
+        if (t.identifier === moveTouchId) {
+          handleJoystickMove(t);
+        } else if (t.identifier === lookTouchId) {
+          const dx = t.clientX - lookLastPos.x;
+          const dy = t.clientY - lookLastPos.y;
+          lookLastPos = { x: t.clientX, y: t.clientY };
+          cameraYaw -= dx * 0.004;
+          cameraPitch -= dy * 0.004;
+          cameraPitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, cameraPitch));
+        }
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      for (let t of e.changedTouches) {
+        if (t.identifier === moveTouchId) {
+          moveTouchId = null;
+          touchMoveVector = { x: 0, y: 0 };
+          joystickKnob.style.transform = `translate(0px, 0px)`;
+        } else if (t.identifier === lookTouchId) {
+          lookTouchId = null;
+        }
+      }
+    });
+
+    // Sağ Alan ile Etrafa Bakış
+    window.addEventListener('touchstart', (e) => {
+      for (let t of e.changedTouches) {
+        if (t.clientX > window.innerWidth * 0.4 && lookTouchId === null && !t.target.closest('#mobile-action-btn') && !t.target.closest('#info-modal')) {
+          lookTouchId = t.identifier;
+          lookLastPos = { x: t.clientX, y: t.clientY };
+        }
+      }
+    });
+
+    function handleJoystickMove(touch) {
+      const rect = joystickContainer.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      let dx = touch.clientX - centerX;
+      let dy = touch.clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+      const maxR = 40;
+
+      if (dist > maxR) {
+        dx = (dx / dist) * maxR;
+        dy = (dy / dist) * maxR;
+      }
+
+      joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+      touchMoveVector.x = dx / maxR;
+      touchMoveVector.y = dy / maxR;
+    }
+
+    // Bilgi Modalı Etkileşimi
+    const promptUI = document.getElementById('interaction-prompt');
+    const infoModal = document.getElementById('info-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDesc = document.getElementById('modal-desc');
+    const closeInfoBtn = document.getElementById('close-info-btn');
+
+    function triggerInteraction() {
+      if (currentNearBoard && infoModal.style.display !== 'flex') {
+        modalTitle.textContent = currentNearBoard.userData.title;
+        modalDesc.textContent = currentNearBoard.userData.desc;
+        infoModal.style.display = 'flex';
+      }
+    }
+
+    function closeInfoModal() {
+      infoModal.style.display = 'none';
+    }
+
+    closeInfoBtn.addEventListener('click', closeInfoModal);
+    mobileActionBtn.addEventListener('click', triggerInteraction);
+
+    // Ana Döngü (Movement, Çarpışma ve Render)
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      if (isGameActive && infoModal.style.display !== 'flex') {
+        // Kamera Açısını Ayarla
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        euler.x = cameraPitch;
+        euler.y = cameraYaw;
+        camera.quaternion.setFromEuler(euler);
+
+        // Hareket Yönü Hesabı
+        const moveDir = new THREE.Vector3();
+        if (keys.w) moveDir.z -= 1;
+        if (keys.s) moveDir.z += 1;
+        if (keys.a) moveDir.x -= 1;
+        if (keys.d) moveDir.x += 1;
+
+        if (touchMoveVector.x !== 0 || touchMoveVector.y !== 0) {
+          moveDir.x = touchMoveVector.x;
+          moveDir.z = touchMoveVector.y;
+        }
+
+        if (moveDir.length() > 0) {
+          moveDir.normalize();
+          moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
+
+          const speed = 4.8;
+          camera.position.x += moveDir.x * speed * delta;
+          camera.position.z += moveDir.z * speed * delta;
+
+          // Duvar Sınırları / Çarpışma (Koridor İçi Tutma)
+          camera.position.x = Math.max(-3.4, Math.min(3.4, camera.position.x));
+          camera.position.z = Math.max(-64, Math.min(2, camera.position.z));
+        }
+
+        // Panolara Yakınlık Tespiti
+        currentNearBoard = null;
+        for (let board of interactiveBoards) {
+          const dist = camera.position.distanceTo(board.position);
+          if (dist < 3.2) {
+            currentNearBoard = board;
+            break;
+          }
+        }
+
+        if (currentNearBoard) {
+          promptUI.style.display = 'block';
+        } else {
+          promptUI.style.display = 'none';
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
