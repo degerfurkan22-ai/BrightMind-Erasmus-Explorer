@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Erasmus+ 3D Okul Sergisi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0b1120; font-family: 'Segoe UI', Roboto, sans-serif; }
+    #game-canvas { width: 100%; height: 100%; display: block; }
+    #start-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 17, 32, 0.96); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-card { background: #1e293b; padding: 30px 24px; border-radius: 16px; width: 90%; max-width: 440px; box-shadow: 0 12px 32px rgba(0,0,0,0.65); border: 1px solid #38bdf8; color: #f8fafc; text-align: center; }
+    .modal-card h2 { font-size: 23px; margin-bottom: 10px; color: #38bdf8; }
+    .modal-card p { font-size: 14px; color: #94a3b8; margin-bottom: 18px; line-height: 1.5; }
+    .modal-card input[type="text"] { width: 100%; padding: 13px 14px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 15px; outline: none; }
+    .modal-card input[type="text"]:focus { border-color: #38bdf8; }
+    .checkbox-container { display: flex; align-items: flex-start; gap: 10px; text-align: left; margin-bottom: 20px; font-size: 13px; color: #cbd5e1; cursor: pointer; }
+    .checkbox-container input { margin-top: 2px; width: 18px; height: 18px; accent-color: #0284c7; cursor: pointer; }
+    .modal-card button { width: 100%; padding: 14px; background: #0284c7; color: white; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+    .modal-card button:hover { background: #0369a1; }
+    #crosshair { position: fixed; top: 50%; left: 50%; width: 6px; height: 6px; background: rgba(255, 255, 255, 0.85); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; }
+    #interaction-prompt { position: fixed; bottom: 115px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); color: #38bdf8; padding: 11px 24px; border-radius: 30px; font-weight: bold; font-size: 14px; border: 1px solid #38bdf8; display: none; z-index: 20; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    #info-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.78); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
+    .info-card { background: #1e293b; padding: 28px 24px; border-radius: 16px; width: 100%; max-width: 550px; max-height: 85vh; overflow-y: auto; border: 2px solid #38bdf8; color: #f1f5f9; box-shadow: 0 12px 35px rgba(0,0,0,0.75); }
+    .info-card h3 { color: #38bdf8; margin-bottom: 14px; font-size: 21px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+    .info-card p { font-size: 15px; line-height: 1.7; color: #e2e8f0; margin-bottom: 16px; white-space: pre-line; }
+    .info-card button { background: #e11d48; color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; float: right; }
+    #hud-info { position: fixed; top: 15px; left: 15px; background: rgba(15, 23, 42, 0.85); color: #94a3b8; padding: 10px 14px; border-radius: 8px; font-size: 12px; z-index: 10; pointer-events: none; border: 1px solid #334155; }
+    #joystick-container { position: fixed; bottom: 25px; left: 25px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; touch-action: none; z-index: 30; display: none; }
+    #joystick-knob { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(56, 189, 248, 0.85); border-radius: 50%; pointer-events: none; }
+    #mobile-action-btn { position: fixed; bottom: 35px; right: 35px; width: 75px; height: 75px; background: #0284c7; color: white; border: 2px solid #38bdf8; border-radius: 50%; font-size: 14px; font-weight: bold; display: none; justify-content: center; align-items: center; z-index: 30; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+  </style>
+</head>
+<body>
+  <div id="start-modal">
+    <div class="modal-card">
+      <h2>🇪🇺 Erasmus+ 3D Okul Sergisi</h2>
+      <p>3D Okul koridorundaki Erasmus+ panolarını keşfedin. Başlamak için bilgilerinizi girin.</p>
+      <input type="text" id="player-name" placeholder="Adınız ve Soyadınız" autocomplete="off" required>
+      <label class="checkbox-container">
+        <input type="checkbox" id="email-optin" checked>
+        <span>Giriş yaptığımda e-posta bildirimi gönderilmesini onaylıyorum.</span>
+      </label>
+      <button id="start-btn">Sergiye Başla</button>
+    </div>
+  </div>
+
+  <div id="crosshair"></div>
+  <div id="hud-info">
+    <div><strong>Kontroller:</strong></div>
+    <div>PC: WASD / Ok tuşları + Fare | [E] İncele / Konuş</div>
+    <div>Mobil: Sol Joystick + Sağ ekran çevir | [İncele] butonu</div>
+  </div>
+
+  <div id="interaction-prompt">İncelemek / Konuşmak için [E] tuşuna veya butona bas</div>
+
+  <div id="info-modal">
+    <div class="info-card">
+      <h3 id="modal-title">Başlık</h3>
+      <p id="modal-desc">İçerik...</p>
+      <button id="close-info-btn">Kapat</button>
+    </div>
+  </div>
+
+  <div id="joystick-container"><div id="joystick-knob"></div></div>
+  <div id="mobile-action-btn">İncele</div>
+
+  <canvas id="game-canvas"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const FORMSPREE_ENDPOINT = "https://formspree.io/f/mbgdrqae";
+
+    const boardData = [
+      { shortTitle: "1. ERASMUS+ NEDİR?", line1: "Avrupa Birliği Fırsatları", line2: "Eğitim, Gençlik & Spor Fonu", line3: "Kültürlerarası Ortaklık", detailTitle: "1. Erasmus+ Programı Nedir ve Amaçları Nelerdir?", detailDesc: "• Erasmus+, Avrupa Birliği tarafından yürütülen ve desteklenen uluslararası bir değişim programıdır.\n\n• Üniversite ve lise öğrencilerinin yanı sıra akademisyenlere, gençlik liderlerine ve stajyerlere kapılarını açar.\n\n• Temel Amacı: Bireylerin yurt dışında eğitim almasını, yabancı dilini geliştirmesini, mesleki deneyim elde etmesini ve Avrupa entegrasyonu bilincini kazanmasını sağlamaktır.", pos: { x: -3.85, y: 1.8, z: -8 }, rotY: Math.PI / 2 },
+      { shortTitle: "2. ÖĞRENİM HAREKETLİLİĞİ", line1: "Dönemlik Üniversite Eğitimi", line2: "Tam Akademik Tanınırlık", line3: "ECTS Kredi Transferi", detailTitle: "2. Yükseköğretim Öğrenci Öğrenim Hareketliliği", detailDesc: "• Öğrencilerin 1 veya 2 yarıyıl (2 ila 12 ay arası) boyunca Avrupa'daki anlaşmalı bir üniversitede eğitim görmesidir.\n\n• Şartlar: Lisans için en az 2.20 / 4.00, lisansüstü için 2.50 / 4.00 genel not ortalaması (GPA) ve yabancı dil sınavı başarısı aranır.\n\n• Ders Tanınırlığı: Alınan tüm dersler Öğrenim Anlaşması (Learning Agreement) ile kendi üniversitenizde birebir sayılır ve dönem kaybı yaşanmaz.", pos: { x: 3.85, y: 1.8, z: -8 }, rotY: -Math.PI / 2 },
+      { shortTitle: "3. STAJ HAREKETLİLİĞİ", line1: "Uluslararası Mesleki Tecrübe", line2: "Avrupa Şirketlerinde Staj", line3: "Mezuniyet Sonrası İlk 12 Ay", detailTitle: "3. Erasmus+ Staj Hareketliliği (Traineeship)", detailDesc: "• Avrupa'daki bir işletmede, hastanede, araştırma enstitüsünde veya sivil toplum kuruluşunda 2 ila 12 ay süresince pratik iş deneyimi kazanma imkanıdır.\n\n• Mezuniyet Avantajı: Son sınıftayken başvuru yapılması şartıyla, mezuniyet tarihinden itibaren 12 ay içinde de staj tamamlanabilir.\n\n• CV Katkısı: Uluslararası iş deneyimi, mezuniyet sonrası küresel iş piyasasında çok büyük bir avantaj sunar.", pos: { x: -3.85, y: 1.8, z: -22 }, rotY: Math.PI / 2 },
+      { shortTitle: "4. HİBE DESTEĞİ VE GRUPLAR", line1: "Aylık 450€ - 750€ Arası Hibe", line2: "Geri Ödemesiz Destek", line3: "Gidilen Ülke Yaşam Endeksi", detailTitle: "4. Aylık Hibe Miktarları ve Ülke Grupları", detailDesc: "• Hibe, öğrencilerin konaklama, yeme-içme ve yaşam masraflarına katkı sağlamak amacıyla verilen karşılıksız bir fondur.\n\n• 1. & 2. Grup Ülkeler (Almanya, Fransa, İtalya vb.): Aylık yaklaşık 600€ - 750€\n• 3. Grup Ülkeler (Polonya, Macaristan, Romanya vb.): Aylık yaklaşık 450€ - 600€\n\n• Dezavantajlı veya ihtiyaç sahibi öğrencilere ek sosyal kapsayıcılık hibeleri de tanımlanabilmektedir.", pos: { x: 3.85, y: 1.8, z: -22 }, rotY: -Math.PI / 2 },
+      { shortTitle: "5. DİL SINAVI VE OLS KURSU", line1: "Yabancı Dil Yeterliliği", line2: "Ücretsiz Online Dil Eğitimi", line3: "İkinci Dil Öğrenme Fırsatı", detailTitle: "5. Dil Sınavı ve Online Language Support (OLS)", detailDesc: "• Başvuru sürecinde üniversitelerin düzenlediği dil sınavı puanı, seçim puanınızın %50'sini oluşturur.\n\n• OLS Platformu: Erasmus'a hak kazanan katılımcılara Avrupa Komisyonu tarafından ücretsiz 'Online Language Support' dil platformu açılır.\n\n• İngilizce'nin yanı sıra gidilecek ülkenin yerel dili (Almanca, İtalyanca, İspanyolca vb.) de bu platform üzerinden ücretsiz öğrenilebilir.", pos: { x: -3.85, y: 1.8, z: -36 }, rotY: Math.PI / 2 },
+      { shortTitle: "6. YEŞİL SEYAHAT HİBESİ", line1: "Çevre Dostu Ulaşım Seçeneği", line2: "Tek Seferlik 50€ Ek Hibe", line3: "4 Güne Kadar Ek Yol Desteği", detailTitle: "6. Yeşil Seyahat (Green Travel) Desteği", detailDesc: "• Avrupa Birliği'nin sürdürülebilirlik vizyonu gereği karbon ayak izini azaltan öğrenciler ödüllendirilir.\n\n• Ulaşımda uçak yerine tren, otobüs veya carpooling (paylaşımlı araç) tercih eden öğrencilere tek seferlik ilave 50€ hibe ödenir.\n\n• Ayrıca yolculuk süresine bağlı olarak 4 güne kadar ek bireysel destek (günlük yol hibesi) verilir.", pos: { x: 3.85, y: 1.8, z: -36 }, rotY: -Math.PI / 2 },
+      { shortTitle: "7. ESN ÖĞRENCİ AĞI", line1: "Erasmus Student Network", line2: "Barınma ve Rehberlik", line3: "Şehir Turları ve Etkinlikler", detailTitle: "7. ESN (Erasmus Student Network) Rehberliği", detailDesc: "• ESN, Avrupa'nın 40'tan fazla ülkesinde binden fazla yükseköğretim kurumunda faaliyet gösteren en büyük gönüllü öğrenci organizasyonudur.\n\n• 'Students Helping Students' ilkesiyle çalışırlar.\n\n• Yurt/ev bulma, şehre alışma oryantasyonu, havalimanı karşılama ve kültürel etkinliklerle değişim öğrencilerine ilk günden itibaren tam destek olurlar.", pos: { x: -3.85, y: 1.8, z: -50 }, rotY: Math.PI / 2 },
+      { shortTitle: "8. KAZANIMLAR VE GELECEK", line1: "Küresel Vizyon ve Özgüven", line2: "Yüksek İstihdam Oranı", line3: "Uluslararası Arkadaş Ağı", detailTitle: "8. Kişisel Kazanımlar ve Kariyer Fırsatları", detailDesc: "• Özgüven & Uyum: Yabancı bir ülkede tek başına yaşayabilmek kriz yönetimi, problem çözme ve bağımsızlık kazandırır.\n\n• Kariyer Gücü: Avrupa Komisyonu araştırmalarına göre Erasmus mezunlarının iş bulma süresi kısalmakta ve işsizlik riski yarı yarıya düşmektedir.\n\n• Ömür Boyu Bağlar: Dünyanın dört bir yanından kalıcı dostluklar ve profesyonel bir küresel ağ edinirsiniz.", pos: { x: 3.85, y: 1.8, z: -50 }, rotY: -Math.PI / 2 }
+    ];
+
+    const startModal = document.getElementById('start-modal');
+    const nameInput = document.getElementById('player-name');
+    const emailOptin = document.getElementById('email-optin');
+    const startBtn = document.getElementById('start-btn');
+    let isGameActive = false;
+
+    startBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      if (!name) { alert("Lütfen adınızı ve soyadınızı girin!"); return; }
+
+      if (emailOptin.checked) {
+        const formData = new FormData();
+        formData.append("Katilimci_Adi_Soyadi", name);
+        formData.append("Giris_Zamani", new Date().toLocaleString('tr-TR'));
+        formData.append("Platform", "3D Erasmus Okul Sergisi (GitHub Pages)");
+        fetch(FORMSPREE_ENDPOINT, { method: "POST", body: formData, headers: { "Accept": "application/json" }, mode: 'no-cors' }).catch(e => console.log(e));
+      }
+
+      startModal.style.display = 'none';
+      isGameActive = true;
+      initTouchIfMobile();
+    });
+
+    const canvas = document.getElementById('game-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0f1d);
+
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.6, 2);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+
+    for (let z = 0; z >= -60; z -= 12) {
+      const p = new THREE.PointLight(0xfff7ed, 0.75, 15);
+      p.position.set(0, 3.8, z);
+      scene.add(p);
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      lamp.position.set(0, 3.96, z);
+      scene.add(lamp);
+    }
+
+    const corridorLength = 66, corridorWidth = 8, corridorHeight = 4, centerZ = -29;
+
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(corridorWidth, corridorLength), new THREE.MeshLambertMaterial({ color: 0x334155 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, 0, centerZ);
+    scene.add(floor);
+
+    const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(corridorWidth, corridorLength), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.set(0, corridorHeight, centerZ);
+    scene.add(ceiling);
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(corridorLength, corridorHeight), new THREE.MeshLambertMaterial({ color: 0x475569 }));
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.position.set(-corridorWidth / 2, corridorHeight / 2, centerZ);
+    scene.add(leftWall);
+
+    const rightWall = leftWall.clone();
+    rightWall.rotation.y = -Math.PI / 2;
+    rightWall.position.set(corridorWidth / 2, corridorHeight / 2, centerZ);
+    scene.add(rightWall);
+
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(corridorWidth, corridorHeight), new THREE.MeshLambertMaterial({ color: 0x475569 }));
+    backWall.position.set(0, corridorHeight / 2, 4);
+    scene.add(backWall);
+
+    const frontWall = backWall.clone();
+    frontWall.rotation.y = Math.PI;
+    frontWall.position.set(0, corridorHeight / 2, centerZ - (corridorLength / 2));
+    scene.add(frontWall);
+
+    function createBoardTexture(data) {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 680;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#091224'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 14; ctx.strokeRect(8, 8, c.width - 16, c.height - 16);
+      ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 4; ctx.strokeRect(22, 22, c.width - 44, c.height - 44);
+      ctx.fillStyle = '#0284c7'; ctx.fillRect(26, 26, c.width - 52, 110);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 44px Arial'; ctx.textAlign = 'center'; ctx.fillText("🇪🇺 ERASMUS+ BİLGİ PANOSU", c.width / 2, 94);
+      ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 48px Arial'; ctx.fillText(data.shortTitle, c.width / 2, 230);
+      ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 34px Arial'; ctx.fillText("• " + data.line1, c.width / 2, 330);
+      ctx.fillStyle = '#cbd5e1'; ctx.font = '32px Arial'; ctx.fillText("• " + data.line2, c.width / 2, 410);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '30px Arial'; ctx.fillText("• " + data.line3, c.width / 2, 485);
+      ctx.fillStyle = '#38bdf8'; ctx.font = 'italic bold 28px Arial'; ctx.fillText("🔍 Yaklaşın ve Ayrıntıları İnceleyin ➔", c.width / 2, 595);
+      return new THREE.CanvasTexture(c);
+    }
+
+    const interactiveObjects = [];
+
+    boardData.forEach((data) => {
+      const group = new THREE.Group();
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(2.7, 1.8, 0.08), new THREE.MeshLambertMaterial({ color: 0xb45309 }));
+      const texture = createBoardTexture(data);
+      const board = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.6, 0.09), new THREE.MeshBasicMaterial({ map: texture }));
+      group.add(frame); group.add(board);
+      group.position.set(data.pos.x, data.pos.y, data.pos.z);
+      group.rotation.y = data.rotY;
+      group.userData = { title: data.detailTitle, desc: data.detailDesc };
+      scene.add(group);
+      interactiveObjects.push(group);
+    });
+
+    const characterGroup = new THREE.Group();
+    const charBody = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 1.1, 16), new THREE.MeshLambertMaterial({ color: 0x0284c7 }));
+    charBody.position.y = 1.05; characterGroup.add(charBody);
+    const charHead = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), new THREE.MeshLambertMaterial({ color: 0xfbcfe8 }));
+    charHead.position.y = 1.85; characterGroup.add(charHead);
+    const charHair = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x3f2e21 }));
+    charHair.position.y = 1.88; characterGroup.add(charHair);
+    const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), new THREE.MeshBasicMaterial({ color: 0x111111 }));
+    eye1.position.set(-0.1, 1.88, 0.25);
+    const eye2 = eye1.clone(); eye2.position.set(0.1, 1.88, 0.25);
+    characterGroup.add(eye1); characterGroup.add(eye2);
+    const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8, 12), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    leg1.position.set(-0.18, 0.4, 0);
+    const leg2 = leg1.clone(); leg2.position.set(0.18, 0.4, 0);
+    characterGroup.add(leg1); characterGroup.add(leg2);
+
+    const labelCanvas = document.createElement('canvas'); labelCanvas.width = 512; labelCanvas.height = 128;
+    const lCtx = labelCanvas.getContext('2d');
+    lCtx.fillStyle = 'rgba(15, 23, 42, 0.85)'; lCtx.fillRect(10, 10, 492, 108);
+    lCtx.strokeStyle = '#38bdf8'; lCtx.lineWidth = 6; lCtx.strokeRect(10, 10, 492, 108);
+    lCtx.fillStyle = '#ffffff'; lCtx.font = 'bold 36px Arial'; lCtx.textAlign = 'center'; lCtx.fillText("🧑‍🎓 Erasmus Rehberi", 256, 75);
+    const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(labelCanvas), transparent: true }));
+    labelMesh.position.y = 2.4; characterGroup.add(labelMesh);
+
+    characterGroup.position.set(0, 0, -58.5);
+    characterGroup.userData = {
+      title: "🧑‍🎓 Erasmus Rehberinden Mesaj",
+      desc: "“Erasmus, ülkelerin birbirlerinin kültürünü öğrenmesine yardımcı olur!\n\nFarklı dilleri, gelenekleri ve yaşam biçimlerini yerinde deneyimleyerek dünya vatandaşı olmamızı sağlar.”"
+    };
+    scene.add(characterGroup);
+    interactiveObjects.push(characterGroup);
+
+    const keys = { w: false, a: false, s: false, d: false };
+    let cameraYaw = 0, cameraPitch = 0, currentNearObj = null;
+
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (keys.hasOwnProperty(k)) keys[k] = true;
+      if (k === 'arrowup') keys.w = true; if (k === 'arrowdown') keys.s = true;
+      if (k === 'arrowleft') keys.a = true; if (k === 'arrowright') keys.d = true;
+      if (k === 'e') triggerInteraction();
+      if (k === 'escape') closeInfoModal();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
+      if (keys.hasOwnProperty(k)) keys[k] = false;
+      if (k === 'arrowup') keys.w = false; if (k === 'arrowdown') keys.s = false;
+      if (k === 'arrowleft') keys.a = false; if (k === 'arrowright') keys.d = false;
+    });
+
+    canvas.addEventListener('click', () => { if (isGameActive && !isTouchDevice()) canvas.requestPointerLock(); });
+
+    document.addEventListener('mousemove', (e) => {
+      if (document.pointerLockElement === canvas) {
+        cameraYaw -= e.movementX * 0.0024;
+        cameraPitch -= e.movementY * 0.0024;
+        cameraPitch = Math.max(-Math.PI / 2.6, Math.min(Math.PI / 2.6, cameraPitch));
+      }
+    });
+
+    function isTouchDevice() { return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); }
+
+    const joystickContainer = document.getElementById('joystick-container');
+    const joystickKnob = document.getElementById('joystick-knob');
+    const mobileActionBtn = document.getElementById('mobile-action-btn');
+    let touchMoveVector = { x: 0, y: 0 }, moveTouchId = null, lookTouchId = null, lookLastPos = { x: 0, y: 0 };
+
+    function initTouchIfMobile() {
+      if (isTouchDevice()) { joystickContainer.style.display = 'block'; mobileActionBtn.style.display = 'flex'; }
+    }
+
+    joystickContainer.addEventListener('touchstart', (e) => {
+      for (let t of e.changedTouches) { if (moveTouchId === null) { moveTouchId = t.identifier; handleJoystickMove(t); } }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      for (let t of e.changedTouches) {
+        if (t.identifier === moveTouchId) { handleJoystickMove(t); }
+        else if (t.identifier === lookTouchId) {
+          const dx = t.clientX - lookLastPos.x, dy = t.clientY - lookLastPos.y;
+          lookLastPos = { x: t.clientX, y: t.clientY };
+          cameraYaw -= dx * 0.004; cameraPitch -= dy * 0.004;
+          cameraPitch = Math.max(-Math.PI / 2.6, Math.min(Math.PI / 2.6, cameraPitch));
+        }
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      for (let t of e.changedTouches) {
+        if (t.identifier === moveTouchId) { moveTouchId = null; touchMoveVector = { x: 0, y: 0 }; joystickKnob.style.transform = 'translate(0px, 0px)'; }
+        else if (t.identifier === lookTouchId) { lookTouchId = null; }
+      }
+    });
+
+    window.addEventListener('touchstart', (e) => {
+      for (let t of e.changedTouches) {
+        if (t.clientX > window.innerWidth * 0.38 && lookTouchId === null && !t.target.closest('#mobile-action-btn') && !t.target.closest('#info-modal')) {
+          lookTouchId = t.identifier; lookLastPos = { x: t.clientX, y: t.clientY };
+        }
+      }
+    });
+
+    function handleJoystickMove(touch) {
+      const rect = joystickContainer.getBoundingClientRect();
+      const dx = touch.clientX - (rect.left + rect.width / 2);
+      const dy = touch.clientY - (rect.top + rect.height / 2);
+      const dist = Math.hypot(dx, dy), maxR = 40;
+      let nx = dx, ny = dy;
+      if (dist > maxR) { nx = (dx / dist) * maxR; ny = (dy / dist) * maxR; }
+      joystickKnob.style.transform = `translate(${nx}px, ${ny}px)`;
+      touchMoveVector.x = nx / maxR; touchMoveVector.y = ny / maxR;
+    }
+
+    const promptUI = document.getElementById('interaction-prompt');
+    const infoModal = document.getElementById('info-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDesc = document.getElementById('modal-desc');
+    const closeInfoBtn = document.getElementById('close-info-btn');
+
+    function triggerInteraction() {
+      if (currentNearObj && infoModal.style.display !== 'flex') {
+        modalTitle.textContent = currentNearObj.userData.title;
+        modalDesc.textContent = currentNearObj.userData.desc;
+        infoModal.style.display = 'flex';
+      }
+    }
+
+    function closeInfoModal() { infoModal.style.display = 'none'; }
+    closeInfoBtn.addEventListener('click', closeInfoModal);
+    mobileActionBtn.addEventListener('click', triggerInteraction);
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      if (isGameActive && infoModal.style.display !== 'flex') {
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        euler.x = cameraPitch; euler.y = cameraYaw;
+        camera.quaternion.setFromEuler(euler);
+
+        const moveDir = new THREE.Vector3();
+        if (keys.w) moveDir.z -= 1; if (keys.s) moveDir.z += 1;
+        if (keys.a) moveDir.x -= 1; if (keys.d) moveDir.x += 1;
+        if (touchMoveVector.x !== 0 || touchMoveVector.y !== 0) { moveDir.x = touchMoveVector.x; moveDir.z = touchMoveVector.y; }
+        if (moveDir.length() > 0) {
+          moveDir.normalize(); moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
+          camera.position.x += moveDir.x * 5.0 * delta;
+          camera.position.z += moveDir.z * 5.0 * delta;
+          camera.position.x = Math.max(-3.3, Math.min(3.3, camera.position.x));
+          camera.position.z = Math.max(-56.8, Math.min(3, camera.position.z));
+        }
+
+        currentNearObj = null;
+        for (let obj of interactiveObjects) {
+          if (camera.position.distanceTo(obj.position) < 3.2) { currentNearObj = obj; break; }
+        }
+        promptUI.style.display = currentNearObj ? 'block' : 'none';
+      }
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
